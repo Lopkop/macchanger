@@ -1,5 +1,5 @@
 # macchanger
-Program for changing mac addresses of network interfaces in **MacOS**.
+Program for changing mac address in **Linux** and **MacOS**.
 
 ### How to install:
 ```bash

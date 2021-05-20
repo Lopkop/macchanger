@@ -1,6 +1,6 @@
 """
 Simple mac address changer for MacOS
-Command line: python linux_macchanger.py --help
+Command line: python linux_macchanger.py **--help**
 """
 
 import re
@@ -18,23 +18,14 @@ art = r"""
    /,)-^>> _\` \\\ 
    (/   \\ //\\ [Author]: Lopkop
        // _//\\\\ [Version]: 0.1
-      ((` (( [OS]: Linux
+      ((` ((
 """
 
 colorama.init(autoreset=True)
 
 
-def validate_mac_and_interface(parser, mac_address, interface):
-    """
-    Validates MAC address and interface that user specify
-    Args:
-        parser:
-        mac_address:
-        interface:
-
-    Returns:
-        None
-    """
+def validate_mac_and_interface(parser: argparse.ArgumentParser, mac_address: str, interface: str):
+    """Validates MAC address and interface that user specify"""
     if not interface:
         parser.error(
             colorama.Fore.LIGHTYELLOW_EX + '[!] Please specify an interface, use --help from more information.')
@@ -50,7 +41,7 @@ def validate_mac_and_interface(parser, mac_address, interface):
         parser.error(colorama.Fore.LIGHTRED_EX + f'[-] interface "{interface}" does not exist.')
 
 
-def get_current_mac(parser, interface):
+def get_current_mac(parser: argparse.ArgumentParser, interface: str):
     """Returns current mac address from interface that user specify"""
     validate_mac_and_interface(parser, options.new_mac, options.interface)
     ifconfig_result = subprocess.check_output(['ifconfig', interface])
@@ -62,7 +53,7 @@ def get_current_mac(parser, interface):
         parser.error(colorama.Fore.LIGHTRED_EX + f'[-] Could not read MAC address.')
 
 
-def set_arguments_and_get_options(parser):
+def set_arguments_and_get_options(parser: argparse.ArgumentParser):
     """Sets arguments and return user specify values"""
     parser.add_argument('-i', '--interface', dest='interface', help='Interface to change its MAC address')
     parser.add_argument('-m', '--mac', dest='new_mac', help='New MAC address')
@@ -72,10 +63,10 @@ def set_arguments_and_get_options(parser):
     return options
 
 
-def change_mac(interface, new_mac):
+def change_mac(interface: str, new_mac: str):
     """Changes the mac address"""
     subprocess.call(f'ifconfig {interface} down', shell=True)
-    subprocess.call(f'ifconfig {interface} hw {interface} {new_mac}', shell=True)
+    subprocess.call(f'ifconfig {interface} hw ether {new_mac}', shell=True)
     subprocess.call(f'ifconfig {interface} up', shell=True)
 
 

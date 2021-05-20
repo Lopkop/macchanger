@@ -1,12 +1,13 @@
 """
-Simple mac address changer for MacOS
-Command line: python linux_macchanger.py **--help**
+Simple mac address changer for Linux and MacOS.
+Command line: python macchanger.py --help
 """
 
-import re
 import subprocess
 import argparse
 import colorama
+import sys
+import re
 
 art = r"""
 \\             //
@@ -15,17 +16,19 @@ art = r"""
    \_-//' /  //<,
      \ ///  <//`
     /  >>  \\\`__/_
-   /,)-^>> _\` \\\ 
+   /,)-^>> _\` \\\
    (/   \\ //\\ [Author]: Lopkop
-       // _//\\\\ [Version]: 0.1
-      ((` ((
+       // _//\\\\ [Version]: 1.0
+      ((` (( 
 """
 
 colorama.init(autoreset=True)
 
 
 def validate_mac_and_interface(parser: argparse.ArgumentParser, mac_address: str, interface: str):
-    """Validates MAC address and interface that user specify"""
+    """Validates operating system, MAC address and interface that user specify"""
+    if not (sys.platform.startswith('linux') or sys.platform.startswith('darwin')):
+        parser.error(colorama.Fore.LIGHTYELLOW_EX + '[!] Operation system must be linux or mac.')
     if not interface:
         parser.error(
             colorama.Fore.LIGHTYELLOW_EX + '[!] Please specify an interface, use --help from more information.')
@@ -65,9 +68,12 @@ def set_arguments_and_get_options(parser: argparse.ArgumentParser):
 
 def change_mac(interface: str, new_mac: str):
     """Changes the mac address"""
-    subprocess.call(f'ifconfig {interface} down', shell=True)
-    subprocess.call(f'ifconfig {interface} hw ether {new_mac}', shell=True)
-    subprocess.call(f'ifconfig {interface} up', shell=True)
+    if sys.platform.startswith('darwin'):
+        subprocess.call(f'sudo ifconfig {interface} ether {new_mac}', shell=True)
+    if sys.platform.startswith('linux'):
+        subprocess.call(f'ifconfig {interface} down', shell=True)
+        subprocess.call(f'ifconfig {interface} hw ether {new_mac}', shell=True)
+        subprocess.call(f'ifconfig {interface} up', shell=True)
 
 
 parser = argparse.ArgumentParser()

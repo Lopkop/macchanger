@@ -36,6 +36,7 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+logs.log
 logs/
 
 # Unit test / coverage reports
@@ -130,3 +131,6 @@ dmypy.json
 .pyre/
 
 .idea/
+
+# macos .DS_STORE
+.DS_STORE

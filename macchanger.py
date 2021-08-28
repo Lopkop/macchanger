@@ -18,7 +18,7 @@ art = r"""
     /  >>  \\\`__/_
    /,)-^>> _\` \\\
    (/   \\ //\\ [Author]: Lopkop
-       // _//\\\\ [Version]: 1.1
+       // _//\\\\ [Version]: 1.2
       ((` (( 
 """
 
@@ -28,7 +28,7 @@ colorama.init(autoreset=True)
 def _validate_os(parser: argparse.ArgumentParser) -> None:
     """Validates operating system, OS must be either Linux or OS X"""
     if not (sys.platform.startswith('linux') or sys.platform.startswith('darwin')):
-        parser.error(colorama.Fore.LIGHTYELLOW_EX + '[!] Operation system must be either linux or mac.')
+        parser.error(colorama.Fore.LIGHTYELLOW_EX + '[!] Operating system must be either linux or OS X.')
 
 
 def _validate_mac_address(parser: argparse.ArgumentParser, mac_address: str) -> None:
@@ -58,19 +58,24 @@ def _validate_all_requirements(parser: argparse.ArgumentParser, interface: str, 
     _validate_mac_address(parser, mac_address)
 
 
-def _set_arguments_and_get_parameters(parser: argparse.ArgumentParser):
+def _set_arguments_and_get_parameters(parser: argparse.ArgumentParser) -> argparse.Namespace:
     """Sets arguments and return user specify values"""
+    group = parser.add_mutually_exclusive_group()
+
     parser.add_argument('-i', '--interface', dest='interface', help='Interface to change its MAC address')
-    parser.add_argument('-m', '--mac', dest='new_mac', help='New MAC address')
+    group.add_argument('-m', '--mac', dest='new_mac', help='New MAC address')
+    group.add_argument('-gcm', '--get-current-mac', dest='current_mac', help='Get current MAC address',
+                       action='store_true', required=False)
     parameters = parser.parse_args()
 
-    _validate_all_requirements(parser, parameters.interface, parameters.new_mac)
+    if not parameters.current_mac:
+        _validate_all_requirements(parser, parameters.interface, parameters.new_mac)
     return parameters
 
 
-def get_current_mac(parser: argparse.ArgumentParser, parameters: argparse.Namespace):
+def get_current_mac(parser: argparse.ArgumentParser, parameters: argparse.Namespace) -> str:
     """Returns current mac address from interface that user specify"""
-    _validate_all_requirements(parser, parameters.interface, parameters.new_mac)
+    _validate_interface(parser, parameters.interface)
     ifconfig_result = subprocess.check_output(['ifconfig', parameters.interface])
     mac_address = re.search(r'\w\w:\w\w:\w\w:\w\w:\w\w:\w\w', str(ifconfig_result))
 
@@ -80,9 +85,9 @@ def get_current_mac(parser: argparse.ArgumentParser, parameters: argparse.Namesp
         parser.error(colorama.Fore.LIGHTRED_EX + f'[-] Could not read MAC address.')
 
 
-def change_mac(interface: str, new_mac: str):
+def change_mac(interface: str, new_mac: str) -> None:
     """Changes the mac address"""
-    if sys.platform.startswith('darwin'):
+    if sys.platform.startswith('darwin'):  # darwin == OS X
         subprocess.call(f'sudo ifconfig {interface} ether {new_mac}', shell=True)
     if sys.platform.startswith('linux'):
         subprocess.call(f'ifconfig {interface} down', shell=True)
@@ -91,13 +96,16 @@ def change_mac(interface: str, new_mac: str):
 
 
 if __name__ == '__main__':
-    main_parser = argparse.ArgumentParser()
-    all_parameters = _set_arguments_and_get_parameters(main_parser)
+    main_parser = argparse.ArgumentParser(description='Simple mac address changer for Linux and OS X.')
+    arguments = _set_arguments_and_get_parameters(main_parser)
+    if arguments.current_mac:
+        print(f'current MAC = {get_current_mac(main_parser, arguments)}')
+        exit()
     print(art)
-    print(f'current MAC = {get_current_mac(main_parser, all_parameters)}')
-    change_mac(all_parameters.interface, all_parameters.new_mac)
+    print(f'current MAC = {get_current_mac(main_parser, arguments)}')
+    change_mac(arguments.interface, arguments.new_mac)
 
-    if get_current_mac(main_parser, all_parameters) == all_parameters.new_mac:
-        print(colorama.Fore.LIGHTGREEN_EX + f'[+] MAC address has been changed to {all_parameters.new_mac}')
+    if get_current_mac(main_parser, arguments) == arguments.new_mac:
+        print(colorama.Fore.LIGHTGREEN_EX + f'[+] MAC address has been changed to {arguments.new_mac}')
     else:
-        print(colorama.Fore.LIGHTRED_EX + f'[-] MAC address has not been changed to {all_parameters.new_mac}')
+        print(colorama.Fore.LIGHTRED_EX + f'[-] MAC address has not been changed to {arguments.new_mac}')

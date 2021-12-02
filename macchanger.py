@@ -5,6 +5,8 @@ Command line: python macchanger.py --help
 
 import subprocess
 import argparse
+import random
+
 import colorama
 import sys
 import re
@@ -18,7 +20,7 @@ art = r"""
     /  >>  \\\`__/_
    /,)-^>> _\` \\\
    (/   \\ //\\ [Author]: Lopkop
-       // _//\\\\ [Version]: 1.2
+       // _//\\\\ [Version]: 1.3
       ((` (( 
 """
 
@@ -64,17 +66,24 @@ def _set_arguments_and_get_parameters(parser: argparse.ArgumentParser) -> argpar
 
     parser.add_argument('-i', '--interface', dest='interface', help='Interface to change its MAC address')
     group.add_argument('-m', '--mac', dest='new_mac', help='New MAC address')
+    group.add_argument('-r', '--random', dest='random_mac', help='Generates random MAC address', required=False,
+                       action='store_true')
     group.add_argument('-gcm', '--get-current-mac', dest='current_mac', help='Get current MAC address',
                        action='store_true', required=False)
     parameters = parser.parse_args()
 
-    if not parameters.current_mac:
+    if not (parameters.current_mac or parameters.random_mac):
         _validate_all_requirements(parser, parameters.interface, parameters.new_mac)
     return parameters
 
 
+def get_random_mac() -> str:
+    """Generates random MAC address"""
+    return ':'.join([f'{random.randint(0, 255):02x}' for _ in range(6)])
+
+
 def get_current_mac(parser: argparse.ArgumentParser, parameters: argparse.Namespace) -> str:
-    """Returns current mac address from interface that user specify"""
+    """Returns current MAC address from interface that user specify"""
     _validate_interface(parser, parameters.interface)
     ifconfig_result = subprocess.check_output(['ifconfig', parameters.interface])
     mac_address = re.search(r'\w\w:\w\w:\w\w:\w\w:\w\w:\w\w', str(ifconfig_result))
@@ -85,27 +94,32 @@ def get_current_mac(parser: argparse.ArgumentParser, parameters: argparse.Namesp
         parser.error(colorama.Fore.LIGHTRED_EX + f'[-] Could not read MAC address.')
 
 
-def change_mac(interface: str, new_mac: str) -> None:
+def change_mac(interface: str, mac_address: str) -> None:
     """Changes the mac address"""
-    if sys.platform.startswith('darwin'):  # darwin == OS X
-        subprocess.call(f'sudo ifconfig {interface} ether {new_mac}', shell=True)
+    if sys.platform.startswith('darwin'):
+        subprocess.call(f'sudo ifconfig {interface} ether {mac_address}', shell=True)
     if sys.platform.startswith('linux'):
         subprocess.call(f'ifconfig {interface} down', shell=True)
-        subprocess.call(f'ifconfig {interface} hw ether {new_mac}', shell=True)
+        subprocess.call(f'ifconfig {interface} hw ether {mac_address}', shell=True)
         subprocess.call(f'ifconfig {interface} up', shell=True)
 
 
 if __name__ == '__main__':
     main_parser = argparse.ArgumentParser(description='Simple mac address changer for Linux and OS X.')
     arguments = _set_arguments_and_get_parameters(main_parser)
+    print(art)
     if arguments.current_mac:
         print(f'current MAC = {get_current_mac(main_parser, arguments)}')
         exit()
-    print(art)
     print(f'current MAC = {get_current_mac(main_parser, arguments)}')
-    change_mac(arguments.interface, arguments.new_mac)
 
-    if get_current_mac(main_parser, arguments) == arguments.new_mac:
-        print(colorama.Fore.LIGHTGREEN_EX + f'[+] MAC address has been changed to {arguments.new_mac}')
+    random_mac = get_random_mac()
+    if arguments.random_mac:
+        change_mac(arguments.interface, random_mac)
     else:
-        print(colorama.Fore.LIGHTRED_EX + f'[-] MAC address has not been changed to {arguments.new_mac}')
+        change_mac(arguments.interface, arguments.new_mac)
+
+    if get_current_mac(main_parser, arguments) == (new_mac := arguments.new_mac or random_mac):
+        print(colorama.Fore.LIGHTGREEN_EX + f'[+] MAC address has been changed to {new_mac}')
+    else:
+        print(colorama.Fore.LIGHTRED_EX + f'[-] MAC address has not been changed to {new_mac}')

@@ -79,7 +79,7 @@ def _set_arguments_and_get_parameters(parser: argparse.ArgumentParser) -> argpar
 
 def get_random_mac() -> str:
     """Generates random MAC address"""
-    return ':'.join([f'{random.randint(0, 255):02x}' for _ in range(6)])
+    return ':'.join(f'{random.randint(0, 255):02x}' for _ in range(6))
 
 
 def get_current_mac(parser: argparse.ArgumentParser, parameters: argparse.Namespace) -> str:
